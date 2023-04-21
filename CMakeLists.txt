@@ -1,0 +1,93 @@
+cmake_minimum_required(VERSION 3.8)
+project(pi3hat_moteus_control)
+
+set (CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+set(THIS_PACKAGE_INCLUDE_DEPENDS
+  ament_cmake
+  rclcpp
+)
+
+foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
+  find_package(${Dependency} REQUIRED)
+endforeach()
+
+add_executable(moteus_control
+  src/pi3hat/pi3hat.cc
+  src/moteus/moteus_control_example.cc
+)
+
+ament_target_dependencies(moteus_control ${THIS_PACKAGE_INCLUDE_DEPENDS})
+
+target_link_libraries(moteus_control /lib/libbcm_host.so)
+
+target_include_directories(
+  moteus_control PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include
+)
+
+target_compile_features(moteus_control PUBLIC c_std_99 cxx_std_11)
+
+
+add_executable(pi3hat_tool 
+  src/pi3hat/pi3hat.cc
+  src/pi3hat/pi3hat_tool.cc
+)
+
+ament_target_dependencies(pi3hat_tool ${THIS_PACKAGE_INCLUDE_DEPENDS})
+
+target_link_libraries(pi3hat_tool /lib/libbcm_host.so)
+
+target_include_directories(
+  pi3hat_tool PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include
+)
+
+target_compile_features(pi3hat_tool PUBLIC c_std_99 cxx_std_11)
+
+install(
+        TARGETS moteus_control
+        DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+        TARGETS pi3hat_tool
+        DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+        DIRECTORY include/
+        DESTINATION include
+)
+
+install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  # comment the line when a copyright and license is added to all source files
+  set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips cpplint (only works in a git repo)
+  # comment the line when this package is in a git repo and when
+  # a copyright and license is added to all source files
+  set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+ament_export_include_directories(
+  include
+)
+ament_export_libraries(
+  ${PROJECT_NAME}
+)
+
+ament_package()
