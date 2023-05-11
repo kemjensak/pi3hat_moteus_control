@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 project(pi3hat_moteus_control)
 
-set (CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
-
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -10,6 +8,7 @@ endif()
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   ament_cmake
   rclcpp
+  moteus_msgs
 )
 
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
@@ -18,7 +17,7 @@ endforeach()
 
 add_executable(moteus_control
   src/pi3hat/pi3hat.cc
-  src/moteus/moteus_control_example.cc
+  src/pi3hat_moteus_control.cpp
 )
 
 ament_target_dependencies(moteus_control ${THIS_PACKAGE_INCLUDE_DEPENDS})
@@ -30,9 +29,6 @@ target_include_directories(
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include
 )
-
-target_compile_features(moteus_control PUBLIC c_std_99 cxx_std_11)
-
 
 add_executable(pi3hat_tool 
   src/pi3hat/pi3hat.cc
@@ -48,8 +44,6 @@ target_include_directories(
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include
 )
-
-target_compile_features(pi3hat_tool PUBLIC c_std_99 cxx_std_11)
 
 install(
         TARGETS moteus_control
@@ -73,12 +67,7 @@ install(
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
   set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
