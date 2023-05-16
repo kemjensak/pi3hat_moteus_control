@@ -66,14 +66,14 @@ enum Multiplex : uint32_t {
 
 enum Register : uint32_t {
   kMode = 0x000,
-  kPosition = 0x001,
+  kPosition = 0x006,
   kVelocity = 0x002,
   kTorque = 0x003,
   kQCurrent = 0x004,
   kDCurrent = 0x005,
   kRezeroState = 0x00c,
   kVoltage = 0x00d,
-  kTemperature = 0x00e,
+  kTemperature = 0x00a,
   kFault = 0x00f,
 
   kPwmPhaseA = 0x010,
@@ -648,6 +648,18 @@ inline void EmitQueryCommand(
     for (int i = 0; i < 4; i++) {
       combiner.MaybeWrite();
     }
+  }
+  {
+    WriteCombiner<1> combiner(frame, 0x10, 6U, {
+            command.position,
+            });
+      combiner.MaybeWrite();
+  }
+  {
+    WriteCombiner<1> combiner(frame, 0x10, 10U, {
+            command.temperature,
+            });
+      combiner.MaybeWrite();
   }
 }
 
