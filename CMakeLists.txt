@@ -7,7 +7,9 @@ endif()
 
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   ament_cmake
+  ament_cmake_python
   rclcpp
+  rclpy
   moteus_msgs
 )
 
@@ -18,6 +20,14 @@ endforeach()
 add_executable(moteus_control
   src/pi3hat/pi3hat.cc
   src/pi3hat_moteus_control.cpp
+)
+
+# Install Python modules
+ament_python_install_package(${PROJECT_NAME})
+# Install Python executables
+install(PROGRAMS
+      scripts/udp_connector.py
+      DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_target_dependencies(moteus_control ${THIS_PACKAGE_INCLUDE_DEPENDS})

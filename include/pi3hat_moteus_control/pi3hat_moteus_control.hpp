@@ -46,15 +46,18 @@ namespace
         uint64_t cycle_count_ = 0;
         moteus_msgs::msg::MoteusStateArray msg_output_;
         moteus_msgs::msg::MoteusCommandArray msg_input_;
-    };
+        double cmd_offset_m2_ = std::numeric_limits<double>::quiet_NaN();
+        double cmd_offset_m3_ = std::numeric_limits<double>::quiet_NaN();
+
+        };
 
     SampleController::SampleController() : Node("moteus")
     {
         submsg_ = this->create_subscription<moteus_msgs::msg::MoteusCommandArray>("command", rclcpp::SensorDataQoS(),
-                                                                                  [this](const moteus_msgs::msg::MoteusCommandArray::SharedPtr msg)
-                                                                                  { msg_input_ = *msg; });
+                                                                                [this](const moteus_msgs::msg::MoteusCommandArray::SharedPtr msg)
+                                                                                { msg_input_ = *msg; });
 
-        pubmsg_ = this->create_publisher<moteus_msgs::msg::MoteusStateArray>("state", 1);
+        pubmsg_ = this->create_publisher<moteus_msgs::msg::MoteusStateArray>("state", rclcpp::QoS(1));
     }
 
     void SampleController::Initialize(std::vector<MoteusInterface::ServoCommand> *commands)
@@ -65,7 +68,7 @@ namespace
         res.feedforward_torque = moteus::Resolution::kInt16;
         res.kp_scale = moteus::Resolution::kInt16;
         res.kd_scale = moteus::Resolution::kInt16;
-        res.maximum_torque = moteus::Resolution::kInt16;
+        res.maximum_torque = moteus::Resolution::kIgnore;
         res.stop_position = moteus::Resolution::kIgnore;
         res.watchdog_timeout = moteus::Resolution::kIgnore;
         for (auto &cmd : *commands)
@@ -87,33 +90,90 @@ namespace
                 cmd.mode = moteus::Mode::kStopped;
             }
         }
+
         else
         {
+            if ( (std::isnan(cmd_offset_m2_) || std::isnan(cmd_offset_m3_)) &&
+                (!std::isnan(replies[1].result.position && !std::isnan(replies[2].result.position)) &&
+                replies.size() >= 3))
+            {
+                cmd_offset_m2_ = -replies[2].result.i2c_position + replies[1].result.i2c_position + replies[1].result.position;
+                if (replies[2].result.i2c_position > 0.8) cmd_offset_m2_ += 1.0;
+                if (replies[1].result.i2c_position > 0.5) cmd_offset_m2_ -= 1.0;
+                
+                cmd_offset_m3_ = -replies[2].result.i2c_position - replies[1].result.i2c_position + replies[2].result.position;
+                if (replies[2].result.i2c_position > 0.8) cmd_offset_m3_ += 1.0;
+                if (replies[1].result.i2c_position > 0.5) cmd_offset_m3_ -= 1.0;
+
+                // cmd_offset_m3_ = -replies[2].result.i2c_position + replies[2].result.position;
+                // if (replies[2].result.i2c_position > 0.8) cmd_offset_m3_ += 1;
+
+                
+            }
+            // current_theta_4_ = replies[1].result.position - replies[2].result.position;
+            
             rclcpp::spin_some(this->get_node_base_interface());
             for (auto &m_cmd : msg_input_.moteus_commands)
             {
+
+                
+                if (m_cmd.id > 3) continue;
                 auto &out = output->at(m_cmd.id - 1);
                 out.mode = moteus::Mode::kPosition;
-                out.position.position = m_cmd.position;
+                out.position.position = std::numeric_limits<double>::quiet_NaN();
+
+               
+                // apply offset
+                if(m_cmd.id == 2){
+                    out.position.position = m_cmd.position - msg_input_.moteus_commands[2].position + cmd_offset_m2_;
+                    
+                }
+                else if(m_cmd.id == 3){
+                    out.position.position = m_cmd.position + msg_input_.moteus_commands[1].position + cmd_offset_m3_;
+                }
+
+                // else if(m_cmd.id == 3){
+                //     out.position.stop_position = output->at(1).position.stop_position - (latest_i2c_positions_[2] + m_cmd.position);
+                //     output->at(1).position.stop_position += (latest_i2c_positions_[2] + m_cmd.position);
+                // }
+                // if(m_cmd.id == 4){
+                //     out.position.stop_position = latest_i2c_positions_[1] + m_cmd.position + 
+                //                                  latest_i2c_positions_[2] + msg_input_.moteus_commands.;
+                // }
+                // if(m_cmd.id == 5){
+                //     out.position.stop_position = latest_i2c_positions_[1] + m_cmd.position + 
+                //                                  latest_i2c_positions_[2] + msg_input_.moteus_commands.;
+                // }
+                else out.position.position = m_cmd.position;
+                // out.position.stop_position = m_cmd.stop_position;
                 out.position.velocity = m_cmd.velocity;
                 out.position.maximum_torque = m_cmd.maximum_torque;
-                std::cout << "id: " << m_cmd.id << " velocity: " << m_cmd.velocity << " torque: " << m_cmd.maximum_torque << std::endl;
+
+                out.position.position /= (2.0 * M_PI);
+                out.position.velocity /= (2.0 * M_PI);
+                // out.position.stop_position /= (2.0 * M_PI);
+
+            //     std::cout << "id: " << m_cmd.id
+            //               << " velocity: " << m_cmd.velocity
+            //               << " torque: " << m_cmd.maximum_torque
+            //               << " position: " << out.position.position
+            //               << std::endl;
             }
 
-            // auto &out = output->at(0);
-            // out.mode = moteus::Mode::kPosition;
-            // out.position.position = std::numeric_limits<double>::quiet_NaN();
-            // out.position.velocity = 0.1;
-            // out.position.maximum_torque = 3.0;
+            // std::cout << "m2 offset: " << cmd_offset_m2_ << std::endl
+            //             << "m3 offset: " << cmd_offset_m3_
+            //             << "diff bet motors: " << replies[2].result.position - replies[1].result.position 
+            //             << std::endl;
+            // cmd_offset_m2_ = std::numeric_limits<double>::quiet_NaN();
 
-            // const auto primary = Get(status, arguments_.primary_id, arguments_.primary_bus);
             msg_output_.moteus_states.clear();
             for (auto reply : replies)
             {
                 moteus_msgs::msg::MoteusState moteus_state;
                 moteus_state.id = reply.id;
-                moteus_state.position = reply.result.position;
-                moteus_state.velocity = reply.result.velocity;
+                moteus_state.position = reply.result.position * (2.0 * M_PI);
+                moteus_state.i2c_position = reply.result.i2c_position * (2.0 * M_PI);
+                moteus_state.velocity = reply.result.velocity * (2.0 * M_PI);
                 moteus_state.torque = reply.result.torque;
                 moteus_state.q_current = reply.result.q_current;
                 moteus_state.d_current = reply.result.d_current;
@@ -122,12 +182,11 @@ namespace
                 moteus_state.temperature = reply.result.temperature;
                 moteus_state.fault = reply.result.fault;
 
-                msg_output_.moteus_states.push_back(moteus_state);
-                // std::cout << "id: " << reply.id << std::endl;
-                // std::cout << "position: " << reply.result.position << std::endl;
-                // std::cout << "velocity: " << reply.result.velocity << std::endl;
+                msg_output_.moteus_states.emplace_back(moteus_state);
             }
             pubmsg_->publish(msg_output_);
+            
+            
         }
     }
 
@@ -147,11 +206,17 @@ namespace
     {
         return {
             {1, 1},
-            {2, 1},
-            {3, 1},
-            {4, 1},
-            {5, 1},
-            {6, 1},
+            // {2, 1},
+            // {3, 1},
+            // {4, 1},
+            // {5, 1},
+            // {6, 1},
+            // {7, 2},
+            // {8, 2},
+            // {9, 2},
+            // {10, 2},
+            // {11, 2},
+            // {12, 2},
         };
     }
 

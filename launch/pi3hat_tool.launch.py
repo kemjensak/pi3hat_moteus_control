@@ -7,10 +7,18 @@ def generate_launch_description():
             package='pi3hat_moteus_control',
             executable='moteus_control',
             namespace="",
-            name='my_node',
+            name='moteus_control',
             output='screen',
             # Launch the node with root access (GPIO) in a shell
             prefix=["sudo -E env \"PYTHONPATH=$PYTHONPATH\" \"LD_LIBRARY_PATH=$LD_LIBRARY_PATH\" \"PATH=$PATH\" \"USER=$USER\"  bash -c "],
+            shell=True,
+        ),
+        Node(
+            package='pi3hat_moteus_control',
+            executable='udp_connector.py',
+            namespace="",
+            name='udp_connector',
+            output='screen',
             shell=True,
         ),
     ])

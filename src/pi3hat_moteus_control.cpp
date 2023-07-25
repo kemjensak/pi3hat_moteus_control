@@ -39,6 +39,7 @@ namespace
     moteus_options.cpu = 2;
     MoteusInterface moteus_interface{moteus_options};
 
+    // Set servomap
     std::vector<MoteusInterface::ServoCommand> commands;
     for (const auto &pair : controller->servo_bus_map())
     {

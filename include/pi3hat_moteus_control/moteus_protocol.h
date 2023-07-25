@@ -66,7 +66,8 @@ enum Multiplex : uint32_t {
 
 enum Register : uint32_t {
   kMode = 0x000,
-  kPosition = 0x006,
+  kPosition = 0x001,
+  kPositionAbs = 0x006,
   kVelocity = 0x002,
   kTorque = 0x003,
   kQCurrent = 0x004,
@@ -525,7 +526,7 @@ class MultiplexParser {
 struct PositionCommand {
   double position = 0.0;
   double velocity = 0.0;
-  double feedforward_torque = 0.0;
+  double feedforward_torque = 1.0;
   double kp_scale = 1.0;
   double kd_scale = 1.0;
   double maximum_torque = 0.0;
@@ -600,6 +601,7 @@ inline void EmitPositionCommand(
 struct QueryCommand {
   Resolution mode = Resolution::kInt16;
   Resolution position = Resolution::kInt16;
+  Resolution i2c_position = Resolution::kInt16;
   Resolution velocity = Resolution::kInt16;
   Resolution torque = Resolution::kInt16;
   Resolution q_current = Resolution::kIgnore;
@@ -651,7 +653,7 @@ inline void EmitQueryCommand(
   }
   {
     WriteCombiner<1> combiner(frame, 0x10, 6U, {
-            command.position,
+            command.i2c_position,
             });
       combiner.MaybeWrite();
   }
@@ -666,6 +668,7 @@ inline void EmitQueryCommand(
 struct QueryResult {
   Mode mode = Mode::kStopped;
   double position = std::numeric_limits<double>::quiet_NaN();
+  double i2c_position = std::numeric_limits<double>::quiet_NaN();
   double velocity = std::numeric_limits<double>::quiet_NaN();
   double torque = std::numeric_limits<double>::quiet_NaN();
   double q_current = std::numeric_limits<double>::quiet_NaN();
@@ -691,6 +694,10 @@ inline QueryResult ParseQueryResult(const uint8_t* data, size_t size) {
       }
       case Register::kPosition: {
         result.position = parser.ReadPosition(res);
+        break;
+      }
+      case Register::kPositionAbs: {
+        result.i2c_position = parser.ReadPosition(res);
         break;
       }
       case Register::kVelocity: {
