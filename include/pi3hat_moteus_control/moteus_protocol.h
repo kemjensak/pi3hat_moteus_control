@@ -526,12 +526,14 @@ class MultiplexParser {
 struct PositionCommand {
   double position = 0.0;
   double velocity = 0.0;
-  double feedforward_torque = 1.0;
+  double feedforward_torque = 0.0;
   double kp_scale = 1.0;
   double kd_scale = 1.0;
   double maximum_torque = 0.0;
   double stop_position = std::numeric_limits<double>::quiet_NaN();
   double watchdog_timeout = 0.0;
+  double velocity_limit = 0.5;
+  double acceleration_limit = 0.1;
 };
 
 struct PositionResolution {
@@ -543,6 +545,8 @@ struct PositionResolution {
   Resolution maximum_torque = Resolution::kIgnore;
   Resolution stop_position = Resolution::kFloat;
   Resolution watchdog_timeout = Resolution::kFloat;
+  Resolution velocity_limit = Resolution::kFloat;
+  Resolution acceleration_limit = Resolution::kFloat;
 };
 
 inline void EmitStopCommand(WriteCanFrame* frame) {
@@ -561,7 +565,7 @@ inline void EmitPositionCommand(
 
   // Now we use some heuristics to try and group consecutive registers
   // of the same resolution together into larger writes.
-  WriteCombiner<8> combiner(frame, 0x00, Register::kCommandPosition, {
+  WriteCombiner<10> combiner(frame, 0x00, Register::kCommandPosition, {
       resolution.position,
           resolution.velocity,
           resolution.feedforward_torque,
@@ -570,6 +574,8 @@ inline void EmitPositionCommand(
           resolution.maximum_torque,
           resolution.stop_position,
           resolution.watchdog_timeout,
+          resolution.velocity_limit,
+          resolution.acceleration_limit,
     });
 
   if (combiner.MaybeWrite()) {
@@ -595,6 +601,12 @@ inline void EmitPositionCommand(
   }
   if (combiner.MaybeWrite()) {
     frame->WriteTime(command.watchdog_timeout, resolution.watchdog_timeout);
+  }
+    if (combiner.MaybeWrite()) {
+    frame->WriteTime(command.velocity_limit, resolution.velocity_limit);
+  }
+    if (combiner.MaybeWrite()) {
+    frame->WriteTime(command.acceleration_limit, resolution.acceleration_limit);
   }
 }
 

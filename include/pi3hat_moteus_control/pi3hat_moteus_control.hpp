@@ -64,13 +64,15 @@ namespace
     {
         moteus::PositionResolution res;
         res.position = moteus::Resolution::kInt16;
-        res.velocity = moteus::Resolution::kInt16;
-        res.feedforward_torque = moteus::Resolution::kInt16;
-        res.kp_scale = moteus::Resolution::kInt16;
-        res.kd_scale = moteus::Resolution::kInt16;
-        res.maximum_torque = moteus::Resolution::kIgnore;
+        res.velocity = moteus::Resolution::kIgnore;
+        res.feedforward_torque = moteus::Resolution::kIgnore;
+        res.kp_scale = moteus::Resolution::kIgnore;
+        res.kd_scale = moteus::Resolution::kIgnore;
+        res.maximum_torque = moteus::Resolution::kInt16;
         res.stop_position = moteus::Resolution::kIgnore;
         res.watchdog_timeout = moteus::Resolution::kIgnore;
+        res.velocity_limit = moteus::Resolution::kInt16;
+        res.acceleration_limit = moteus::Resolution::kInt16;
         for (auto &cmd : *commands)
         {
             cmd.resolution = res;
@@ -145,8 +147,8 @@ namespace
                 //                                  latest_i2c_positions_[2] + msg_input_.moteus_commands.;
                 // }
                 else out.position.position = m_cmd.position;
-                // out.position.stop_position = m_cmd.stop_position;
-                out.position.velocity = m_cmd.velocity;
+                out.position.acceleration_limit = m_cmd.acceleration;
+                out.position.velocity_limit = m_cmd.velocity;
                 out.position.maximum_torque = m_cmd.maximum_torque;
 
                 out.position.position /= (2.0 * M_PI);

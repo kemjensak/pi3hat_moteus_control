@@ -35,8 +35,8 @@ class UdpSender(Node):
                     (state.i2c_position),
                     (state.velocity),
                     (state.torque),
-                    (0.5),
-                    (3),
+                    (state.q_current),
+                    (state.d_current),
                     (state.voltage),
                     (state.temperature)])
         packed_data = struct.pack('!BBBB' + 'f'*8, *num_list)
@@ -75,12 +75,12 @@ class UdpReceiver(Node):
                 data, addr = udp_socket.recvfrom(32)
 
                 command.id, = struct.unpack('B', data[:1])
-                command.position, command.velocity, command.maximum_torque, command.stop_position = struct.unpack('!' + 'f'*4, data[1:])
+                command.position, command.velocity, command.maximum_torque, command.acceleration = struct.unpack('!' + 'f'*4, data[1:])
             except:
                 print("UDP receive error!")
 
-            print(command.id)
-            print(command.position, command.velocity, command.maximum_torque, command.stop_position)
+            # print(command.id)
+            # print(command.position, command.velocity, command.maximum_torque, command.stop_position)
             
             command_array.moteus_commands.append(command)
             self.publisher_.publish(command_array)
