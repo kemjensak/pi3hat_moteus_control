@@ -95,9 +95,9 @@ namespace
 
         else
         {
-            if ( (std::isnan(cmd_offset_m2_) || std::isnan(cmd_offset_m3_)) &&
-                (!std::isnan(replies[1].result.position && !std::isnan(replies[2].result.position)) &&
-                replies.size() >= 3))
+            if ((std::isnan(cmd_offset_m2_) || std::isnan(cmd_offset_m3_)) &&
+                (!std::isnan(replies[1].result.position) && !std::isnan(replies[2].result.position)) &&
+                replies.size() >= 3)
             {
                 cmd_offset_m2_ = -replies[2].result.i2c_position + replies[1].result.i2c_position + replies[1].result.position;
                 if (replies[2].result.i2c_position > 0.8) cmd_offset_m2_ += 1.0;
