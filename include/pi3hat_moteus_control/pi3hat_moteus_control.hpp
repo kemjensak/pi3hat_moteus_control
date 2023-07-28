@@ -146,14 +146,10 @@ namespace
                 //     out.position.stop_position = latest_i2c_positions_[1] + m_cmd.position + 
                 //                                  latest_i2c_positions_[2] + msg_input_.moteus_commands.;
                 // }
-                else out.position.position = m_cmd.position;
-                out.position.acceleration_limit = m_cmd.acceleration;
-                out.position.velocity_limit = m_cmd.velocity;
+                else out.position.position = m_cmd.position / (2.0 * M_PI);
+                out.position.acceleration_limit = m_cmd.acceleration / (2.0 * M_PI);
+                out.position.velocity_limit = m_cmd.velocity / (2.0 * M_PI);
                 out.position.maximum_torque = m_cmd.maximum_torque;
-
-                out.position.position /= (2.0 * M_PI);
-                out.position.velocity /= (2.0 * M_PI);
-                // out.position.stop_position /= (2.0 * M_PI);
 
             //     std::cout << "id: " << m_cmd.id
             //               << " velocity: " << m_cmd.velocity
