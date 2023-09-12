@@ -95,9 +95,9 @@ namespace
 
         else
         {
-            if ((std::isnan(cmd_offset_m2_) || std::isnan(cmd_offset_m3_)) &&
-                (!std::isnan(replies[1].result.position) && !std::isnan(replies[2].result.position)) &&
-                replies.size() >= 3)
+            if ( (std::isnan(cmd_offset_m2_) || std::isnan(cmd_offset_m3_)) &&
+                (!std::isnan(replies[1].result.position && !std::isnan(replies[2].result.position)) &&
+                replies.size() >= 3))
             {
                 cmd_offset_m2_ = -replies[2].result.i2c_position + replies[1].result.i2c_position + replies[1].result.position;
                 if (replies[2].result.i2c_position > 0.8) cmd_offset_m2_ += 1.0;
@@ -146,10 +146,14 @@ namespace
                 //     out.position.stop_position = latest_i2c_positions_[1] + m_cmd.position + 
                 //                                  latest_i2c_positions_[2] + msg_input_.moteus_commands.;
                 // }
-                else out.position.position = m_cmd.position / (2.0 * M_PI);
-                out.position.acceleration_limit = m_cmd.acceleration / (2.0 * M_PI);
-                out.position.velocity_limit = m_cmd.velocity / (2.0 * M_PI);
+                else out.position.position = m_cmd.position;
+                out.position.acceleration_limit = m_cmd.acceleration;
+                out.position.velocity_limit = m_cmd.velocity;
                 out.position.maximum_torque = m_cmd.maximum_torque;
+
+                out.position.position /= (2.0 * M_PI);
+                out.position.velocity /= (2.0 * M_PI);
+                // out.position.stop_position /= (2.0 * M_PI);
 
             //     std::cout << "id: " << m_cmd.id
             //               << " velocity: " << m_cmd.velocity
@@ -204,11 +208,11 @@ namespace
     {
         return {
             {1, 1},
-            // {2, 1},
-            // {3, 1},
-            // {4, 1},
-            // {5, 1},
-            // {6, 1},
+            {2, 1},
+            {3, 1},
+            {4, 1},
+            {5, 1},
+            {6, 1},
             // {7, 2},
             // {8, 2},
             // {9, 2},

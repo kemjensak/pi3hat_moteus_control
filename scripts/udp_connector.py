@@ -53,7 +53,7 @@ class UdpReceiver(Node):
         self.host = "0.0.0.0"
         self.port = 9999
 
-        self.motor_ids = [1]
+        self.motor_ids = [1,2,3,4,5,6]
 
     def receive_udp_bytes(self, host="0.0.0.0", port=9999):
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -62,30 +62,41 @@ class UdpReceiver(Node):
         
         
         print(f"Listening for UDP packets on {host}:{port}...")
-        all_received = False
-        while rclpy.ok() and not all_received:
-            command = MoteusCommand()
-            command_array = MoteusCommandArray()
-            
+       
+        
+        # loop for set of commands
+        while rclpy.ok():
+            all_received = False
             receive_state = {}
             for id in self.motor_ids:
                 receive_state[id] = False
+            command_array = MoteusCommandArray()
             
-            try:
-                data, addr = udp_socket.recvfrom(32)
+            # loop for single command
+            while not all_received: # wait for receive all commands for "motor_ids"
+                try:
+                    command = MoteusCommand()
+                    data, addr = udp_socket.recvfrom(32)
 
-                command.id, = struct.unpack('B', data[:1])
-                command.position, command.velocity, command.maximum_torque, command.acceleration = struct.unpack('!' + 'f'*4, data[1:])
-            except:
-                print("UDP receive error!")
+                    command.id, = struct.unpack('B', data[:1])
+                    (command.position,
+                    command.velocity,
+                    command.maximum_torque,
+                    command.acceleration) = struct.unpack('!' + 'f'*4, data[1:])
+
+                    if receive_state[command.id] == False:
+                        command_array.moteus_commands.append(command)
+                        receive_state[command.id] = True
+                    all_received = all(receive_state.values())
+                    # print(receive_state)
+                    # print(all_received)
+                except:
+                    print("UDP receive error!")
 
             # print(command.id)
             # print(command.position, command.velocity, command.maximum_torque, command.stop_position)
-            
-            command_array.moteus_commands.append(command)
+            command_array.moteus_commands.sort(key = lambda x: x.id)
             self.publisher_.publish(command_array)
-            # time.sleep(1)
-        
         
     def pub_command(self, command: MoteusCommandArray):
         self.publisher_.publish(command)
