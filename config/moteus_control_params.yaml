@@ -1,0 +1,7 @@
+moteus_control:
+  ros__parameters:
+    servomap: 1
+
+udp_connector:
+  ros__parameters:
+    servomap: 2

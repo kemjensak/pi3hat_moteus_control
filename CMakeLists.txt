@@ -27,6 +27,7 @@ ament_python_install_package(${PROJECT_NAME})
 # Install Python executables
 install(PROGRAMS
       scripts/udp_connector.py
+      scripts/udp_connector_hand.py
       DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -72,6 +73,11 @@ install(
 
 install(
   DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
 )
 

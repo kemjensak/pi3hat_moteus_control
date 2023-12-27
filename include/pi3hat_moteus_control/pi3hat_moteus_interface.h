@@ -110,7 +110,7 @@ class Pi3HatMoteusInterface {
 
  private:
   void CHILD_Run() {
-    ConfigureRealtime(options_.cpu);
+    mjbots::pi3hat::ConfigureRealtime(options_.cpu);
 
     pi3hat_.reset(new pi3hat::Pi3Hat({}));
 
@@ -194,7 +194,7 @@ class Pi3HatMoteusInterface {
   /// This block of variables are all controlled by the mutex.
   std::mutex mutex_;
   std::condition_variable condition_;
-  bool active_ = false;;
+  bool active_ = false;
   bool done_ = false;
   CallbackFunction callback_;
   Data data_;
@@ -211,7 +211,5 @@ class Pi3HatMoteusInterface {
   std::vector<pi3hat::CanFrame> tx_can_;
   std::vector<pi3hat::CanFrame> rx_can_;
 };
-
-
 }
 }

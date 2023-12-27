@@ -1,7 +1,6 @@
 #!/bin/python3
 import rclpy
 from rclpy.node import Node
-import time
 
 from moteus_msgs.msg import MoteusStateArray, MoteusState, MoteusCommand, MoteusCommandArray
 from rclpy.executors import MultiThreadedExecutor
@@ -19,7 +18,7 @@ class UdpSender(Node):
             self.states_callback,
             10)
         self.subscription  # prevent unused variable warning
-        self.host = "192.168.0.32"
+        self.host = "192.168.0.200"
         self.port = 9998
 
     def states_callback(self, msg):
@@ -53,7 +52,8 @@ class UdpReceiver(Node):
         self.host = "0.0.0.0"
         self.port = 9999
 
-        self.motor_ids = [1,2,3,4,5,6]
+        # self.motor_ids = [1,2,3,4,5,6]
+        self.motor_ids = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
 
     def receive_udp_bytes(self, host="0.0.0.0", port=9999):
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -84,9 +84,10 @@ class UdpReceiver(Node):
                     command.maximum_torque,
                     command.acceleration) = struct.unpack('!' + 'f'*4, data[1:])
 
-                    if receive_state[command.id] == False:
+                    if receive_state[command.id] == False and command.id in self.motor_ids:
                         command_array.moteus_commands.append(command)
                         receive_state[command.id] = True
+
                     all_received = all(receive_state.values())
                     # print(receive_state)
                     # print(all_received)

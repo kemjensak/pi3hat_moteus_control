@@ -1,4 +1,4 @@
-// Copyright 2019-2021 Josh Pieper, jjp@pobox.com.
+// Copyright 2023 mjbots Robotic Systems, LLC.  info@mjbots.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,6 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+#ifndef _MJBOTS_PI3HAT_PI3HAT_H_
+#define _MJBOTS_PI3HAT_PI3HAT_H_
 
 /// @file
 ///
@@ -61,6 +64,10 @@ struct CanFrame {
   /// If true, then a reply will be expected for this frame on the
   /// same bus.
   bool expect_reply = false;
+
+  /// If set, this is used as a hint to increase delays.  If unset,
+  /// then the minimum delay may need to be increased.
+  uint8_t expected_reply_size = 0;
 };
 
 struct Quaternion {
@@ -199,15 +206,28 @@ class Pi3Hat {
     /// This is not super precise, as the writing process has various
     /// queues, so it will need to encompass some amount of the time
     /// spend writing as well.
-    uint32_t timeout_ns = 0;
+    uint32_t timeout_ns = 20000; //0
 
     /// When waiting for CAN replies, guarantee to wait for at least
     /// this many nanoseconds after the final transmission is sent
     /// over SPI (not necessarily over the CAN bus).
-    uint32_t min_tx_wait_ns = 200000;
+    uint32_t min_tx_wait_ns = 2000000; // 200000
+
+    /// In addition to the absolute min_tx_wait_ns, there is a
+    /// parallel calculation that attempts to estimate the total delay
+    /// path for command-response pairs to set a minimum delay.  This
+    /// value controls the non-calculated part of that estimate.  It
+    /// should be the worst case response latency for a single device.
+    ///
+    /// Note, by default this is much longer than a device should
+    /// actually take, so as to handle a wide range of possible host
+    /// configurations.  i.e. including non-isolcpus or non-chrt
+    /// operation.  If you have a properly configured system running
+    /// on an isolcpu, this can potentially be as small as 200us.
+    uint32_t rx_baseline_wait_ns = 1000000; // 1000000
 
     /// After each successful receipt, wait this much longer for more.
-    uint32_t rx_extra_wait_ns = 40000;
+    uint32_t rx_extra_wait_ns = 0;
 
     bool request_attitude = false;
 
@@ -248,8 +268,7 @@ class Pi3Hat {
   ///  * Read the current ARS result
   ///  * Send any desired RF slots
   ///  * Return any RF slots that may have been received
-  // Output Cycle(const Input& input);
-  Output Cycle(mjbots::pi3hat::Pi3Hat::Input const&);
+  Output Cycle(const Input& input);
 
   struct ProcessorInfo {
     uint8_t git_hash[20] = {};
@@ -288,3 +307,5 @@ class Pi3Hat {
 
 }
 }
+
+#endif
